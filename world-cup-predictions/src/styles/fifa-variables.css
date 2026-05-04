@@ -1,0 +1,28 @@
+:root{
+  /* FIFA-like color tokens (inspired by FIFA branding) */
+  --fifa-blue:#005392; /* deep FIFA blue */
+  --table-width-percent:95%;
+  --fifa-gold:#ffcc00; /* accent gold */
+  --fifa-green:#00a859; /* pitch green */
+  --bg:#ffffff;
+  --text:#1b1b1b;
+  --muted:#6b7280;
+  --border:rgba(0,0,0,0.08);
+  --card-bg:#fbfbfd;
+  --shadow: 0 6px 18px rgba(3,9,23,0.08);
+  --radius:8px;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  --player-col-width:120px;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    /* Use lighter greys for background instead of deep/dark blues */
+    --bg:#f3f4f6;
+    --text:#0b1220;
+  --muted:#6b7280;
+  --card-bg:#ffffff;
+    --border:rgba(0,0,0,0.08);
+    --shadow: 0 6px 18px rgba(3,9,23,0.08);
+  }
+}

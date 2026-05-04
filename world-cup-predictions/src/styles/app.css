@@ -1,0 +1,151 @@
+@import './fifa-variables.css';
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+/* App shell */
+.app-shell{display:flex;flex-direction:column;min-height:100vh;background:var(--bg);color:var(--text);font-family:Montserrat, var(--sans)}
+
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:16px 28px;background:#005391;color:#f3f4f6;box-shadow:var(--shadow)}
+.app-header .brand{display:flex;align-items:center;gap:14px}
+.app-header img{height:48px;width:auto;border-radius:6px}
+.app-header h1{font-size:18px;margin:0;font-weight:700;color:var(--card-bg);letter-spacing:0.2px}
+.app-header nav{display:flex;align-items:center;gap:12px}
+.app-header nav a{color:var(--card-bg);margin-left:6px;text-decoration:none;font-weight:600;padding:8px 10px;border-radius:6px;transition:background 0.12s}
+.app-header nav a:hover{background:rgba(255,255,255,0.08)}
+
+.app-main{flex:1;padding:28px;max-width:1100px;margin:12px auto}
+.app-footer{padding:16px;text-align:center;color:var(--muted);font-size:14px;border-top:1px solid var(--border);background:linear-gradient(180deg,transparent,rgba(0,0,0,0.02))}
+
+.brand-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,204,0,0.08);padding:6px 8px;border-radius:8px;color:var(--card-bg);font-weight:700}
+.error-banner{background:#fee2e2;color:#991b1b;padding:8px 12px;border-radius:4px;margin:8px 0}
+
+/* Cards and lists */
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow)}
+.team-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.03)}
+.fixture-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border-bottom:1px dashed var(--border)}
+.fixture-row:last-child{border-bottom:none}
+
+/* Fixtures list refinements */
+.fixtures-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.fixture-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.6), transparent);border:1px solid var(--border);box-shadow:var(--shadow)}
+.fixture-item .team{display:flex;align-items:center;gap:10px;min-width:150px}
+.fixture-item .team.away{justify-content:flex-end}
+.fixture-item .flag{width:36px;height:24px;object-fit:cover;border-radius:4px;border:1px solid rgba(0,0,0,0.06)}
+.fixture-item .kickoff{color:var(--muted);min-width:140px;text-align:center;font-weight:600}
+.fixture-item .score{font-weight:700;color:var(--fifa-blue)}
+.fixture-item .actions{min-width:120px;text-align:center}
+.fixture-item .actions button{background:var(--fifa-gold);border:none;padding:8px 10px;border-radius:6px;font-weight:700;color:#111;cursor:pointer}
+.fixture-item .actions button:hover{filter:brightness(0.95)}
+
+.top-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;width:var(--table-width-percent);max-width:95vw;margin:12px auto 20px auto}
+.top-cards .card{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:16px;text-align:center}
+
+@media (max-width:1100px){
+  /* On narrower viewports reduce columns to fit and avoid overflow */
+  .top-cards{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:720px){
+  .top-cards{grid-template-columns:repeat(1,1fr)}
+}
+
+/* Standings and matchday tables styling */
+.standings, .day-table {width:var(--table-width-percent);max-width:95vw;margin:0 auto;border-collapse:collapse;border:2px solid var(--fifa-blue);}
+.standings th, .standings td, .day-table th, .day-table td {padding:8px;border:1px solid rgba(0,0,0,0.06);text-align:center;}
+.standings thead th, .day-table thead th {background:var(--fifa-blue);color:#fff;font-weight:700}
+.day-table thead th {white-space:nowrap}
+.day-table tbody td {vertical-align:middle}
+.day-table tfoot td {font-weight:700;background:transparent}
+
+/* Dynamic player column widths: first (match) column flexes, player columns use CSS variable width but shrink if needed */
+.day-table col.match-col {width:auto}
+.day-table col.player-col {width:var(--player-col-width);}
+.day-table thead th, .day-table tfoot td {text-align:center}
+
+/* Center text everywhere in standings area */
+.matchday, .standings, .day-table {text-align:center}
+
+/* Reduce vertical spacing so matchday tables sit closer to the top when cards/charts are hidden */
+.matchday{margin-top:24px;padding-top:0}
+.matchday h4{margin:6px 0 10px 0;font-size:16px}
+
+/* Card-based fixtures (replace day-table) */
+.fixture-cards{display:flex;flex-direction:column;gap:12px;width:var(--table-width-percent);max-width:95vw;margin:0 auto}
+.fixture-card{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+.fixture-card-header{display:flex;justify-content:center;align-items:center;gap:12px;font-weight:700;margin:-12px -12px 0 -12px;padding:10px;border-radius:8px 8px 0 0;background:var(--fifa-blue);color:#fff}
+.fixture-card .match-title{font-weight:700;color:#fff}
+.fixture-card .kickoff-small{color:#fff;font-weight:600}
+.fixture-card .outcomes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fixture-card .outcome{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;text-align:center}
+.outcome-label{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:34px;text-align:center;font-weight:700;color:var(--muted);font-size:13px}
+.outcome-label span{overflow-wrap:anywhere}
+.outcome-label .badge{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,0.06)}
+.badge.home{background: rgba(255,238,170,0.9); /* light yellow */}
+.badge.draw{background: rgba(220,220,220,0.9); /* grey */}
+.badge.away{background: rgba(255,224,179,0.95); /* light orange */}
+
+/* Avatar rows: compact tokens with initials; split into two rows when many */
+.avatars-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+.avatar{width:36px;height:36px;flex:0 0 36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#f3f4f6;border:1px solid rgba(0,0,0,0.06);font-weight:700;color:var(--text)}
+.player-initials,.avatar[data-player-name]{position:relative;cursor:help}
+.player-initials::after,.avatar[data-player-name]::after{content:attr(data-player-name);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(4px);z-index:20;padding:6px 8px;border-radius:6px;background:#111827;color:#fff;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.18);opacity:0;pointer-events:none;transition:opacity 120ms ease,transform 120ms ease}
+.player-initials::before,.avatar[data-player-name]::before{content:"";position:absolute;left:50%;bottom:calc(100% + 3px);transform:translateX(-50%) translateY(4px);z-index:21;border:5px solid transparent;border-top-color:#111827;opacity:0;pointer-events:none;transition:opacity 120ms ease,transform 120ms ease}
+.player-initials:hover::after,.player-initials:focus-visible::after,.avatar[data-player-name]:hover::after,.avatar[data-player-name]:focus-visible::after{opacity:1;transform:translateX(-50%) translateY(0)}
+.player-initials:hover::before,.player-initials:focus-visible::before,.avatar[data-player-name]:hover::before,.avatar[data-player-name]:focus-visible::before{opacity:1;transform:translateX(-50%) translateY(0)}
+.avatars-empty{color:var(--muted);text-align:center;width:100%}
+
+.day-scoreboard{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px 0}
+.day-score-player{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:44px}
+.day-score-player .avatar{background:var(--fifa-blue);border-color:var(--fifa-blue);color:#fff}
+.day-score-value{font-weight:800;color:var(--fifa-blue);font-size:13px;line-height:1}
+
+/* Keep the three prediction options as equal columns. */
+@media (min-width:720px){
+  .fixture-card .outcomes{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+/* Color avatars by outcome (fill the player circle) */
+.fixture-card .outcome.home .avatar{background: rgba(255,238,170,0.95); color: #111; border-color: rgba(0,0,0,0.06)}
+.fixture-card .outcome.draw .avatar{background: rgba(220,220,220,0.95); color: #111; border-color: rgba(0,0,0,0.06)}
+.fixture-card .outcome.away .avatar{background: rgba(255,224,179,0.95); color: #111; border-color: rgba(0,0,0,0.06)}
+.fixture-card .outcome .avatar.avatar-correct{background:#bbf7d0;color:#14532d;border-color:#86efac}
+.fixture-card .outcome .avatar.avatar-incorrect{background:#fecaca;color:#7f1d1d;border-color:#fca5a5}
+
+/* Prediction percentage bar */
+.prediction-bar-wrapper{margin-top:8px}
+.prediction-bar{height:12px;background:rgba(0,0,0,0.06);border-radius:6px;overflow:hidden;display:flex}
+.bar-seg{height:100%}
+.bar-seg.home{background: rgba(255,238,170,0.95)}
+.bar-seg.draw{background: rgba(220,220,220,0.95)}
+.bar-seg.away{background: rgba(255,224,179,0.95)}
+.prediction-labels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:6px;color:var(--muted);font-weight:700;font-size:13px}
+.prediction-labels span{text-align:center}
+
+
+
+/* Top-3 cards: full FIFA blue with white text */
+.top-cards .card {border:2px solid var(--fifa-blue);padding:14px;background:var(--fifa-blue);color:#fff}
+.top-cards .card h3{font-weight:700;margin:0 0 6px 0;color:#fff}
+.top-cards .card p{margin:0;font-size:18px;font-weight:800;color:#fff}
+
+/* Day table wrapper: match the main content/table width and center it; hide overflow so it doesn't expand layout */
+.matchday .day-table-wrapper{width:var(--table-width-percent);max-width:95vw;margin:0 auto;overflow-x:hidden;padding:6px 0}
+.day-table{min-width:600px}
+
+/* Chart bar color on Landing/Standings graph */
+.recharts-bar-rectangle{fill:var(--fifa-blue) !important}
+
+@media (max-width:720px){
+  .fixture-item{flex-direction:column;align-items:flex-start}
+  .fixture-item .kickoff{min-width:0;text-align:left}
+  .fixture-item .actions{width:100%;display:flex;justify-content:flex-end}
+}
+
+/* Standings table */
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:10px;border-bottom:1px solid var(--border);text-align:left}
+.table th{background:linear-gradient(90deg,rgba(255,204,0,0.06),transparent);font-weight:700}
+
+/* Responsive tweaks */
+@media (max-width:768px){
+  .app-main{padding:16px}
+  .app-header h1{font-size:16px}
+}
