@@ -1,0 +1,124 @@
+{
+  "teams": [
+    {
+      "id": "mexico",
+      "name": "Mexico",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "south-africa",
+      "name": "South Africa",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "south-korea",
+      "name": "South Korea",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "czech-republic",
+      "name": "Czech Republic",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "canada",
+      "name": "Canada",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "bosnia-herzegovina",
+      "name": "Bosnia-Herzegovina",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "usa",
+      "name": "USA",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "paraguay",
+      "name": "Paraguay",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "brazil",
+      "name": "Brazil",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "morocco",
+      "name": "Morocco",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "qatar",
+      "name": "Qatar",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "switzerland",
+      "name": "Switzerland",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "haiti",
+      "name": "Haiti",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "scotland",
+      "name": "Scotland",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "germany",
+      "name": "Germany",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "cura\u00e7ao",
+      "name": "Cura\u00e7ao",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "ivory-coast",
+      "name": "Ivory Coast",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "ecuador",
+      "name": "Ecuador",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "netherlands",
+      "name": "Netherlands",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    },
+    {
+      "id": "japan",
+      "name": "Japan",
+      "code": "AR",
+      "flag": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png"
+    }
+  ]
+}
