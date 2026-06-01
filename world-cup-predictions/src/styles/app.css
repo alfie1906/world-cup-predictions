@@ -79,7 +79,7 @@
 .outcome-label span{overflow-wrap:anywhere}
 .outcome-label .badge{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,0.06)}
 .badge.home{background: rgba(255,238,170,0.9); /* light yellow */}
-.badge.draw{background: rgba(220,220,220,0.9); /* grey */}
+.badge.draw{background: rgba(191,219,254,0.95); /* light blue */}
 .badge.away{background: rgba(255,224,179,0.95); /* light orange */}
 
 /* Avatar rows: compact tokens with initials; split into two rows when many */
@@ -104,20 +104,18 @@
 
 /* Color avatars by outcome (fill the player circle) */
 .fixture-card .outcome.home .avatar{background: rgba(255,238,170,0.95); color: #111; border-color: rgba(0,0,0,0.06)}
-.fixture-card .outcome.draw .avatar{background: rgba(220,220,220,0.95); color: #111; border-color: rgba(0,0,0,0.06)}
+.fixture-card .outcome.draw .avatar{background: rgba(191,219,254,0.95); color: #111; border-color: rgba(0,0,0,0.06)}
 .fixture-card .outcome.away .avatar{background: rgba(255,224,179,0.95); color: #111; border-color: rgba(0,0,0,0.06)}
 .fixture-card .outcome .avatar.avatar-correct{background:#bbf7d0;color:#14532d;border-color:#86efac}
 .fixture-card .outcome .avatar.avatar-incorrect{background:#fecaca;color:#7f1d1d;border-color:#fca5a5}
 
 /* Prediction percentage bar */
 .prediction-bar-wrapper{margin-top:8px}
-.prediction-bar{height:12px;background:rgba(0,0,0,0.06);border-radius:6px;overflow:hidden;display:flex}
-.bar-seg{height:100%}
+.prediction-bar{height:28px;background:rgba(0,0,0,0.06);border-radius:6px;overflow:hidden;display:flex}
+.bar-seg{height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;color:#111;font-size:16px;font-weight:700;line-height:1;white-space:nowrap}
 .bar-seg.home{background: rgba(255,238,170,0.95)}
-.bar-seg.draw{background: rgba(220,220,220,0.95)}
+.bar-seg.draw{background: rgba(191,219,254,0.95)}
 .bar-seg.away{background: rgba(255,224,179,0.95)}
-.prediction-labels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:6px;color:var(--muted);font-weight:700;font-size:13px}
-.prediction-labels span{text-align:center}
 
 
 
