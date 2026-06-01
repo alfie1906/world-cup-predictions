@@ -81,6 +81,9 @@ const Standings: React.FC = () => {
                 {dayFixtures.map((f) => {
                   const { H: votersH, X: votersX, A: votersA } = votersByPick(predictions, f.id)
                   const totalVotes = votersH.length + votersX.length + votersA.length
+                  const homePercentage = votePercentage(votersH.length, totalVotes)
+                  const drawPercentage = votePercentage(votersX.length, totalVotes)
+                  const awayPercentage = votePercentage(votersA.length, totalVotes)
 
                   const actualResult = fixtureResult(f)
                   const resultClassForPick = (pick: 'H' | 'X' | 'A') => {
@@ -108,28 +111,29 @@ const Standings: React.FC = () => {
                       </div>
                       <div className="outcomes">
                         <div className="outcome home">
-                          <div className="outcome-label"><span>{f.home.name}</span></div>
+                          <div className={`outcome-label${actualResult === 'H' ? ' actual-result' : ''}`}><span>{f.home.name}</span></div>
                           {renderAvatars(votersH, 'H')}
                         </div>
                         <div className="outcome draw">
-                          <div className="outcome-label"><span>Draw</span></div>
+                          <div className={`outcome-label${actualResult === 'X' ? ' actual-result' : ''}`}><span>Draw</span></div>
                           {renderAvatars(votersX, 'X')}
                         </div>
                         <div className="outcome away">
-                          <div className="outcome-label"><span>{f.away.name}</span></div>
+                          <div className={`outcome-label${actualResult === 'A' ? ' actual-result' : ''}`}><span>{f.away.name}</span></div>
                           {renderAvatars(votersA, 'A')}
                         </div>
                       </div>
                       <div className="prediction-bar-wrapper">
                         <div className="prediction-bar">
-                          <div className="bar-seg home" style={{ width: `${votePercentage(votersH.length, totalVotes)}%` }} title={`${votePercentage(votersH.length, totalVotes)}%`} />
-                          <div className="bar-seg draw" style={{ width: `${votePercentage(votersX.length, totalVotes)}%` }} title={`${votePercentage(votersX.length, totalVotes)}%`} />
-                          <div className="bar-seg away" style={{ width: `${votePercentage(votersA.length, totalVotes)}%` }} title={`${votePercentage(votersA.length, totalVotes)}%`} />
-                        </div>
-                        <div className="prediction-labels">
-                          <span>{votePercentage(votersH.length, totalVotes)}%</span>
-                          <span>{votePercentage(votersX.length, totalVotes)}%</span>
-                          <span>{votePercentage(votersA.length, totalVotes)}%</span>
+                          <div className="bar-seg home" style={{ width: `${homePercentage}%` }} title={`${homePercentage}%`}>
+                            {homePercentage > 0 && <span>{homePercentage}%</span>}
+                          </div>
+                          <div className="bar-seg draw" style={{ width: `${drawPercentage}%` }} title={`${drawPercentage}%`}>
+                            {drawPercentage > 0 && <span>{drawPercentage}%</span>}
+                          </div>
+                          <div className="bar-seg away" style={{ width: `${awayPercentage}%` }} title={`${awayPercentage}%`}>
+                            {awayPercentage > 0 && <span>{awayPercentage}%</span>}
+                          </div>
                         </div>
                       </div>
                     </div>
