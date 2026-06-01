@@ -17,6 +17,12 @@ import {
   normalizeApiFixtures,
   parseFixturesLookup,
 } from './fixtureUtils'
+import {
+  isPredictionLockActive,
+  normalizePredictionLockDate,
+  readLockedPredictions,
+  writeLockedPredictions,
+} from './predictionCache'
 
 type FixtureLoadResult = {
   fixtures: Fixture[]
@@ -24,26 +30,19 @@ type FixtureLoadResult = {
   lookupMap: Record<string, string>
 }
 
+type PredictionLoadResult = {
+  players: string[]
+  predictions: Prediction[]
+}
+
 const defaultLookup = { columns: [] }
 
-const getStoredLookup = (): FixturesLookup => {
-  try {
-    const raw = localStorage.getItem('fixturesLookup')
-    return raw ? JSON.parse(raw) : defaultLookup
-  } catch {
-    return defaultLookup
-  }
-}
-
-const storeLookup = (lookup: FixturesLookup) => {
-  try {
-    localStorage.setItem('fixturesLookup', JSON.stringify(lookup))
-  } catch {
-    // localStorage can be unavailable in private browsing or test environments.
-  }
-}
-
 const parseCsv = (csv: string) => Papa.parse<Record<string, unknown>>(csv, { header: true, skipEmptyLines: true })
+
+const withCacheBuster = (url: string) => {
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}_=${Date.now()}`
+}
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [fixtures, setFixtures] = useState<Fixture[]>([])
@@ -51,7 +50,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [playersState, setPlayersState] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [fixturesLookup, setFixturesLookup] = useState<FixturesLookup>(getStoredLookup)
+  const [fixturesLookup, setFixturesLookup] = useState<FixturesLookup>(defaultLookup)
   const [fixturesLookupMap, setFixturesLookupMap] = useState<Record<string, string>>({})
 
   const loadFixtureData = async (): Promise<FixtureLoadResult> => {
@@ -97,7 +96,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setFixtures(loaded.fixtures)
       setFixturesLookup(loaded.lookup)
       setFixturesLookupMap(loaded.lookupMap)
-      storeLookup(loaded.lookup)
 
       return loaded.fixtures
     } catch (error) {
@@ -109,7 +107,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadResultsFromCsv = async (csvUrl: string): Promise<ResultRow[]> => {
     try {
-      const response = await axios.get(toCsvUrl(csvUrl))
+      const response = await axios.get(withCacheBuster(toCsvUrl(csvUrl)))
       const csv = response.data
 
       if (looksLikeHtml(csv)) {
@@ -144,7 +142,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const response = await axios.get(`https://www.thesportsdb.com/api/v1/json/${apiKey}/lookupevent.php`, {
-        params: { id: fixture.id },
+        params: { _: Date.now(), id: fixture.id },
       })
       const events = response.data?.events
       const result = parseSportsDbResult(Array.isArray(events) ? events[0] : undefined)
@@ -177,7 +175,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     csvUrl: string,
     fixturesForMapping: Fixture[],
     lookupMapForMapping: Record<string, string>,
-  ) => {
+  ): Promise<PredictionLoadResult | undefined> => {
     try {
       const response = await axios.get(csvUrl)
       const csv = response.data
@@ -185,7 +183,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (looksLikeHtml(csv) || contentType?.includes('text/html')) {
         setLoadError('Failed to load CSV: ensure the sheet is published to the web as CSV.')
-        return
+        return undefined
       }
 
       const parsed = parseCsv(String(csv || ''))
@@ -204,8 +202,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? 'No predictions parsed from CSV. Check the sheet headers match fixture columns and the sheet is published as CSV.'
           : null,
       )
+
+      return { predictions: parsedPredictions, players }
     } catch {
       setLoadError('Failed to fetch CSV. Check the URL and that the sheet is published to the web as CSV.')
+      return undefined
     }
   }
 
@@ -220,7 +221,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setFixturesLookup(loaded.lookup)
         setFixturesLookupMap(loaded.lookupMap)
-        storeLookup(loaded.lookup)
 
         if (resultsCsvUrl) {
           const refreshedResults = await refreshDueResults(
@@ -233,7 +233,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setFixtures(currentFixtures)
 
         const csvUrl = import.meta.env.VITE_SHEETS_CSV
-        if (csvUrl) await loadPredictionsFromCsv(csvUrl as string, currentFixtures, loaded.lookupMap)
+        const rawPredictionLockDate = String(import.meta.env.VITE_PREDICTIONS_LOCK_DATE || '').trim()
+        const predictionLockDate = normalizePredictionLockDate(rawPredictionLockDate)
+        const predictionLockActive = predictionLockDate ? isPredictionLockActive(predictionLockDate) : false
+
+        if (rawPredictionLockDate && !predictionLockDate) {
+          console.warn('Ignoring invalid VITE_PREDICTIONS_LOCK_DATE. Expected YYYY-MM-DD.')
+        }
+
+        if (csvUrl) {
+          const predictionCsvUrl = csvUrl as string
+          const cachedPredictions = predictionLockActive && predictionLockDate
+            ? readLockedPredictions(localStorage, predictionCsvUrl, predictionLockDate)
+            : undefined
+
+          if (cachedPredictions) {
+            setPredictions(cachedPredictions.predictions)
+            if (cachedPredictions.players.length > 0) setPlayersState(cachedPredictions.players)
+            setLoadError(null)
+          } else {
+            const loadedPredictions = await loadPredictionsFromCsv(predictionCsvUrl, currentFixtures, loaded.lookupMap)
+
+            if (loadedPredictions?.predictions.length && predictionLockActive && predictionLockDate) {
+              writeLockedPredictions(
+                localStorage,
+                predictionCsvUrl,
+                predictionLockDate,
+                loadedPredictions.predictions,
+                loadedPredictions.players,
+              )
+            }
+          }
+        }
       } catch (error) {
         console.error('Failed to load app data', error)
         setLoadError('Failed to load app data')

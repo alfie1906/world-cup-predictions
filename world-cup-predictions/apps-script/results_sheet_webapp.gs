@@ -50,6 +50,8 @@ function updateRows(sheet, rows) {
     if (existingRow) {
       if (match) sheet.getRange(existingRow, 1).setValue(match)
       if (result) sheet.getRange(existingRow, 3).setValue(result)
+    } else if (result) {
+      sheet.appendRow([match, fixtureId, result])
     }
   })
 }
