@@ -111,15 +111,15 @@ const Standings: React.FC = () => {
                       </div>
                       <div className="outcomes">
                         <div className="outcome home">
-                          <div className="outcome-label"><span>{f.home.name}</span></div>
+                          <div className={`outcome-label${actualResult === 'H' ? ' actual-result' : ''}`}><span>{f.home.name}</span></div>
                           {renderAvatars(votersH, 'H')}
                         </div>
                         <div className="outcome draw">
-                          <div className="outcome-label"><span>Draw</span></div>
+                          <div className={`outcome-label${actualResult === 'X' ? ' actual-result' : ''}`}><span>Draw</span></div>
                           {renderAvatars(votersX, 'X')}
                         </div>
                         <div className="outcome away">
-                          <div className="outcome-label"><span>{f.away.name}</span></div>
+                          <div className={`outcome-label${actualResult === 'A' ? ' actual-result' : ''}`}><span>{f.away.name}</span></div>
                           {renderAvatars(votersA, 'A')}
                         </div>
                       </div>
