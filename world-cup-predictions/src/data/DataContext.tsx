@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import Papa from 'papaparse'
 import type { Fixture, FixturesLookup, Prediction, ResultRow } from '../types/domain'
 import { DataContext } from './DataContextObject'
-import { parsePredictionRows, parseResultRows, toCsvUrl, looksLikeHtml } from './csvUtils'
+
 import {
   applyResultRowsToFixtures,
   isDueFixture,
@@ -43,7 +42,7 @@ const storeLookup = (lookup: FixturesLookup) => {
   }
 }
 
-const parseCsv = (csv: string) => Papa.parse<Record<string, unknown>>(csv, { header: true, skipEmptyLines: true })
+// Predictions and results are now retrieved via the server API (Vercel Blob backed).
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [fixtures, setFixtures] = useState<Fixture[]>([])
@@ -59,7 +58,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const apiUrl = import.meta.env.VITE_FIXTURES_API
 
     if (apiUrl) {
-      const response = await axios.get(apiUrl)
+      const isExternal = /^https?:\/\//i.test(apiUrl)
+      const response = isExternal
+        ? await axios.get(apiUrl)
+        : await axios.get(apiUrl, { headers: { 'Cache-Control': 'no-cache' } })
       const apiFixtures = normalizeApiFixtures(response.data)
 
       if (apiFixtures.length > 0) {
@@ -101,41 +103,68 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return loaded.fixtures
     } catch (error) {
-      console.error('Failed to load fixtures', error)
       setLoadError('Failed to load fixtures')
       return []
     }
   }
 
-  const loadResultsFromCsv = async (csvUrl: string): Promise<ResultRow[]> => {
+  const loadResultsFromApi = async (apiUrl: string): Promise<ResultRow[]> => {
     try {
-      const response = await axios.get(toCsvUrl(csvUrl))
-      const csv = response.data
+      const isExternal = /^https?:\/\//i.test(apiUrl)
+      // For external public blob URLs, append a cache-busting query param so
+      // the browser fetches the latest file instead of using a disk cache.
+      const requestUrl = isExternal
+        ? (() => {
+            try {
+              const u = new URL(apiUrl)
+              u.searchParams.append('_', Date.now().toString())
+              return u.toString()
+            } catch (e) {
+              // Fallback: naive append if URL constructor fails for any reason.
+              return apiUrl + (apiUrl.includes('?') ? '&' : '?') + `_=${Date.now()}`
+            }
+          })()
+        : apiUrl
 
-      if (looksLikeHtml(csv)) {
-        console.warn('Results sheet returned HTML instead of CSV. Check the published CSV URL.')
-        return []
+      // Avoid custom headers on cross-origin requests to prevent CORS preflight
+      // failures; do a plain GET for external blob URLs.
+      const response = isExternal
+        ? await axios.get(requestUrl)
+        : await axios.get(apiUrl, { headers: { 'Cache-Control': 'no-cache' } })
+      let data = response.data
+
+      // Accept multiple shapes: plain array, { rows: [...] }, or object with first array-valued property
+      let parsedArray: unknown[] | undefined
+      if (Array.isArray(data)) parsedArray = data
+      else if (data && Array.isArray((data as any).rows)) parsedArray = (data as any).rows
+      else if (data && typeof data === 'object') {
+        for (const v of Object.values(data)) {
+          if (Array.isArray(v)) {
+            parsedArray = v as unknown[]
+            break
+          }
+        }
       }
 
-      return parseResultRows(parseCsv(String(csv || '')).data)
+      
+      if (!parsedArray) return []
+      return parsedArray as ResultRow[]
     } catch (error) {
-      console.warn('Failed to fetch results CSV', error)
       return []
     }
   }
 
   const writeResultsRows = async (rows: ResultRow[]) => {
-    const webAppUrl = import.meta.env.VITE_RESULTS_WEB_APP_URL
-    if (!webAppUrl || rows.length === 0) return
+    if (rows.length === 0) return
 
     try {
-      await fetch(webAppUrl as string, {
+      // POST to the local server API which handles merging and writing to Blob
+      await fetch('/api/results', {
         body: JSON.stringify({ rows }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'application/json;charset=utf-8' },
         method: 'POST',
       })
     } catch (error) {
-      console.warn('Failed to write results rows', error)
     }
   }
 
@@ -151,7 +180,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return result ? { fixtureId: fixture.id, match: matchLabel(fixture), result } : undefined
     } catch (error) {
-      console.warn(`Failed to check result for fixture ${fixture.id}`, error)
       return undefined
     }
   }
@@ -173,39 +201,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [...resultRows.filter((row) => !freshRows.some((fresh) => fresh.fixtureId === row.fixtureId)), ...freshRows]
   }
 
-  const loadPredictionsFromCsv = async (
-    csvUrl: string,
-    fixturesForMapping: Fixture[],
-    lookupMapForMapping: Record<string, string>,
-  ) => {
+  const loadPredictionsFromApi = async (apiUrl: string, fixturesForMapping: Fixture[], lookupMapForMapping: Record<string, string>) => {
     try {
-      const response = await axios.get(csvUrl)
-      const csv = response.data
-      const contentType = (response.headers?.['content-type'] || response.headers?.['Content-Type']) as string | undefined
+      const response = await axios.get(apiUrl)
+      // Debug: log raw response so we can inspect the shape returned by the API
+      
+      let data = response.data
 
-      if (looksLikeHtml(csv) || contentType?.includes('text/html')) {
-        setLoadError('Failed to load CSV: ensure the sheet is published to the web as CSV.')
+      // Accept multiple shapes: plain array, { rows: [...] }, or an object
+      // whose first array-valued property is the predictions array.
+      let parsedArray: unknown[] | undefined
+      if (Array.isArray(data)) parsedArray = data
+      else if (data && Array.isArray((data as any).rows)) parsedArray = (data as any).rows
+      else if (data && typeof data === 'object') {
+        // Find first array among the object's values
+        for (const v of Object.values(data)) {
+          if (Array.isArray(v)) {
+            parsedArray = v as unknown[]
+            break
+          }
+        }
+      }
+
+      if (!parsedArray) {
+        setLoadError('Predictions API returned unexpected data')
         return
       }
 
-      const parsed = parseCsv(String(csv || ''))
-      const fields = parsed.meta.fields || Object.keys(parsed.data[0] || {})
-      const { predictions: parsedPredictions, players } = parsePredictionRows(
-        parsed.data,
-        fields,
-        fixturesForMapping,
-        lookupMapForMapping,
-      )
-
+      const parsedPredictions = parsedArray as Prediction[]
       setPredictions(parsedPredictions)
+      const players = Array.from(new Set(parsedPredictions.map((p) => p.player).filter(Boolean)))
       if (players.length > 0) setPlayersState(players)
-      setLoadError(
-        parsedPredictions.length === 0
-          ? 'No predictions parsed from CSV. Check the sheet headers match fixture columns and the sheet is published as CSV.'
-          : null,
-      )
-    } catch {
-      setLoadError('Failed to fetch CSV. Check the URL and that the sheet is published to the web as CSV.')
+      setLoadError(parsedPredictions.length === 0 ? 'No predictions returned from API.' : null)
+    } catch (err) {
+      setLoadError('Failed to fetch predictions from API')
     }
   }
 
@@ -216,26 +245,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const loaded = await loadFixtureData()
         let currentFixtures = loaded.fixtures
-        const resultsCsvUrl = import.meta.env.VITE_RESULTS_CSV
+        const resultsApiUrl = import.meta.env.VITE_RESULTS_API || '/api/results'
 
         setFixturesLookup(loaded.lookup)
         setFixturesLookupMap(loaded.lookupMap)
         storeLookup(loaded.lookup)
 
-        if (resultsCsvUrl) {
-          const refreshedResults = await refreshDueResults(
-            currentFixtures,
-            await loadResultsFromCsv(resultsCsvUrl as string),
-          )
-          currentFixtures = applyResultRowsToFixtures(currentFixtures, refreshedResults)
-        }
+        // Load results from the JSON API (Vercel Blob backed). Refresh any
+        // fixtures that are due and persist new rows via the webapp endpoint.
+        // If a public blob URL is provided, fetch that directly from the
+        // browser (no proxy). Otherwise, when running locally prefer the dev
+        // blob proxy unless an explicit API url was provided.
+        // In development prefer the local API so POSTs to `/api/results`
+        // update the UI immediately. Only use the public blob URL when
+        // not in dev mode.
+        const publicResultsUrl = import.meta.env.DEV ? undefined : import.meta.env.VITE_RESULTS_PUBLIC_URL
+        const useBlobProxy = Boolean(import.meta.env.BLOB_STORE_ID || import.meta.env.VITE_BLOB_STORE_ID)
+        const resultsRows = await loadResultsFromApi(
+          (publicResultsUrl as string) || (useBlobProxy ? '/__blob/results' : (resultsApiUrl as string)),
+        )
+        
+        const refreshedResults = await refreshDueResults(currentFixtures, resultsRows)
+        currentFixtures = applyResultRowsToFixtures(currentFixtures, refreshedResults)
 
         setFixtures(currentFixtures)
 
-        const csvUrl = import.meta.env.VITE_SHEETS_CSV
-        if (csvUrl) await loadPredictionsFromCsv(csvUrl as string, currentFixtures, loaded.lookupMap)
+        // Load predictions from the JSON API (Vercel Blob backed).
+        const publicPredictionsUrl = import.meta.env.DEV ? undefined : import.meta.env.VITE_PREDICTIONS_PUBLIC_URL
+        const useBlobProxyPred = Boolean(import.meta.env.BLOB_STORE_ID || import.meta.env.VITE_BLOB_STORE_ID)
+        let predictionsApiUrl = import.meta.env.VITE_PREDICTIONS_API || '/api/predictions'
+        if (publicPredictionsUrl) predictionsApiUrl = publicPredictionsUrl as string
+        else if (useBlobProxyPred) predictionsApiUrl = '/__blob/predictions'
+
+        await loadPredictionsFromApi(predictionsApiUrl as string, currentFixtures, loaded.lookupMap)
       } catch (error) {
-        console.error('Failed to load app data', error)
         setLoadError('Failed to load app data')
       } finally {
         setIsLoading(false)
