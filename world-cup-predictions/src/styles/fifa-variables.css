@@ -15,14 +15,5 @@
   --player-col-width:120px;
 }
 
-@media (prefers-color-scheme: dark){
-  :root{
-    /* Use lighter greys for background instead of deep/dark blues */
-    --bg:#f3f4f6;
-    --text:#0b1220;
-  --muted:#6b7280;
-  --card-bg:#ffffff;
-    --border:rgba(0,0,0,0.08);
-    --shadow: 0 6px 18px rgba(3,9,23,0.08);
-  }
-}
+/* Intentionally not using `prefers-color-scheme` so the app always uses the
+   light theme regardless of the user's system/phone setting. */
