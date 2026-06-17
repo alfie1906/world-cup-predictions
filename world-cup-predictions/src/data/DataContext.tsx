@@ -25,15 +25,7 @@ type FixtureLoadResult = {
 
 const defaultLookup = { columns: [] }
 
-// Cache the initial load to avoid duplicate network requests during
-// React Strict Mode double-mount in development.
-let initialLoadPromise: Promise<{
-  fixtures: Fixture[]
-  fixturesLookup: FixturesLookup
-  fixturesLookupMap: Record<string, string>
-  predictions: Prediction[]
-  players: string[]
-}> | null = null
+// (initialLoadPromise is cached inside the effect below)
 
 const getStoredLookup = (): FixturesLookup => {
   try {
@@ -211,7 +203,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [...resultRows.filter((row) => !freshRows.some((fresh) => fresh.fixtureId === row.fixtureId)), ...freshRows]
   }
 
-  const loadPredictionsFromApi = async (apiUrl: string, fixturesForMapping: Fixture[], lookupMapForMapping: Record<string, string>): Promise<Prediction[] | undefined> => {
+  const loadPredictionsFromApi = async (apiUrl: string): Promise<Prediction[] | undefined> => {
     try {
       const response = await axios.get(apiUrl)
       // Debug: log raw response so we can inspect the shape returned by the API
@@ -238,7 +230,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const parsedPredictions = parsedArray as Prediction[]
-      const players = Array.from(new Set(parsedPredictions.map((p) => p.player).filter(Boolean)))
       return parsedPredictions
     } catch (err) {
       return undefined
@@ -283,7 +274,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (publicPredictionsUrl) predictionsApiUrl = publicPredictionsUrl as string
             else if (useBlobProxyPred) predictionsApiUrl = '/__blob/predictions'
 
-            const parsedPredictions = (await loadPredictionsFromApi(predictionsApiUrl as string, currentFixtures, loaded.lookupMap)) || []
+            const parsedPredictions = (await loadPredictionsFromApi(predictionsApiUrl as string)) || []
             const players = Array.from(new Set(parsedPredictions.map((p) => p.player).filter(Boolean)))
 
             return {
