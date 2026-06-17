@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useData } from '../data/useData'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList } from 'recharts'
 import { fixtureResult } from '../data/resultUtils'
 import { formatDateShort, formatKickoffBst } from '../utils/dates'
+import { londonDateKey } from '../utils/dates'
+import { FaRegArrowAltCircleLeft, FaRegArrowAltCircleRight } from 'react-icons/fa'
 import { PlayerAvatar, PlayerInitials } from '../components/PlayerAvatar'
 import {
   calculateTotals,
@@ -20,6 +22,21 @@ const Standings: React.FC = () => {
   const totals = calculateTotals(players, fixtures, predictions)
   const byDate = groupFixturesByLondonDate(fixtures)
   const dateKeys = sortedDateKeys(byDate)
+  const todayKey = useMemo(() => londonDateKey(new Date()), [])
+
+  const initialDateIndex = useMemo(() => {
+    if (dateKeys.length === 0) return -1
+    const todayIdx = dateKeys.findIndex((k) => k === todayKey)
+    if (todayIdx >= 0) return todayIdx
+    const firstAfter = dateKeys.findIndex((k) => new Date(k) > new Date(todayKey))
+    if (firstAfter >= 0) return firstAfter
+    return dateKeys.length - 1
+  }, [dateKeys, todayKey])
+
+  const [selectedIndex, setSelectedIndex] = useState<number>(initialDateIndex)
+  useEffect(() => {
+    setSelectedIndex(initialDateIndex)
+  }, [initialDateIndex])
   const scores = scoreRows(totals)
   const chartHeight = Math.max(320, scores.length * 34 + 48)
 
@@ -69,13 +86,39 @@ const Standings: React.FC = () => {
       )}
 
       {dateKeys.length === 0 && <p>No fixtures loaded</p>}
-      {dateKeys.map((date) => {
+      {dateKeys.length > 0 && (
+        <div className="date-selector">
+          <button
+            className="date-nav"
+            aria-label="Previous date"
+            onClick={() => setSelectedIndex((i) => Math.max(0, (i === -1 ? 0 : i) - 1))}
+            disabled={selectedIndex <= 0}
+          >
+            <FaRegArrowAltCircleLeft />
+          </button>
+          <h4 className="selected-date-label">
+            {selectedIndex >= 0 ? formatDateShort(dateKeys[selectedIndex]) : 'No date'}
+          </h4>
+          <button
+            className="date-nav"
+            aria-label="Next date"
+            onClick={() =>
+              setSelectedIndex((i) => Math.min(dateKeys.length - 1, (i === -1 ? dateKeys.length - 1 : i) + 1))
+            }
+            disabled={selectedIndex === -1 || selectedIndex >= dateKeys.length - 1}
+          >
+            <FaRegArrowAltCircleRight />
+          </button>
+        </div>
+      )}
+
+      {selectedIndex === -1 ? null : (() => {
+        const date = dateKeys[selectedIndex]
         const dayFixtures = sortedFixtures(byDate[date])
         const runningScores = scoreRows(runningTotalsThroughDate(players, byDate, predictions, date))
 
         return (
           <div key={date} className="matchday">
-            <h4>{formatDateShort(date)}</h4>
             <div className="day-table-wrapper">
               <div className="fixture-cards">
                 {dayFixtures.map((f) => {
@@ -153,7 +196,7 @@ const Standings: React.FC = () => {
             </div>
           </div>
         )
-      })}
+      })()}
     </div>
   )
 }

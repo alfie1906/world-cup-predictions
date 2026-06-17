@@ -67,6 +67,13 @@
 .matchday{margin-top:24px;padding-top:0}
 .matchday h4{margin:6px 0 10px 0;font-size:16px}
 
+/* Date selector styling used on Standings page: center, single-line with larger blue icons */
+.date-selector{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0 8px 0}
+.date-selector .date-nav{background:transparent;border:none;color:var(--fifa-blue);font-size:28px;display:inline-flex;align-items:center;justify-content:center;padding:6px;cursor:pointer}
+.date-selector .date-nav:disabled{opacity:0.45;cursor:default}
+.date-selector .selected-date-label{margin:0;font-size:16px;font-weight:700;color:var(--text)}
+.date-selector h4.selected-date-label{margin:0}
+
 /* Card-based fixtures (replace day-table) */
 .fixture-cards{display:flex;flex-direction:column;gap:12px;width:var(--table-width-percent);max-width:95vw;margin:0 auto}
 .fixture-card{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
