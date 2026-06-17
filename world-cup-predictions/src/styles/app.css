@@ -143,6 +143,8 @@
   .fixture-item{flex-direction:column;align-items:flex-start}
   .fixture-item .kickoff{min-width:0;text-align:left}
   .fixture-item .actions{width:100%;display:flex;justify-content:flex-end}
+  /* Stack the three outcome columns on mobile: home, draw, away (DOM order) */
+  .fixture-card .outcomes{grid-template-columns:1fr;gap:10px}
 }
 
 /* Standings table */
