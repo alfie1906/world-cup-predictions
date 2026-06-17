@@ -25,6 +25,16 @@ type FixtureLoadResult = {
 
 const defaultLookup = { columns: [] }
 
+// Cache the initial load to avoid duplicate network requests during
+// React Strict Mode double-mount in development.
+let initialLoadPromise: Promise<{
+  fixtures: Fixture[]
+  fixturesLookup: FixturesLookup
+  fixturesLookupMap: Record<string, string>
+  predictions: Prediction[]
+  players: string[]
+}> | null = null
+
 const getStoredLookup = (): FixturesLookup => {
   try {
     const raw = localStorage.getItem('fixturesLookup')
@@ -201,7 +211,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [...resultRows.filter((row) => !freshRows.some((fresh) => fresh.fixtureId === row.fixtureId)), ...freshRows]
   }
 
-  const loadPredictionsFromApi = async (apiUrl: string, fixturesForMapping: Fixture[], lookupMapForMapping: Record<string, string>) => {
+  const loadPredictionsFromApi = async (apiUrl: string, fixturesForMapping: Fixture[], lookupMapForMapping: Record<string, string>): Promise<Prediction[] | undefined> => {
     try {
       const response = await axios.get(apiUrl)
       // Debug: log raw response so we can inspect the shape returned by the API
@@ -224,60 +234,79 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (!parsedArray) {
-        setLoadError('Predictions API returned unexpected data')
-        return
+        return undefined
       }
 
       const parsedPredictions = parsedArray as Prediction[]
-      setPredictions(parsedPredictions)
       const players = Array.from(new Set(parsedPredictions.map((p) => p.player).filter(Boolean)))
-      if (players.length > 0) setPlayersState(players)
-      setLoadError(parsedPredictions.length === 0 ? 'No predictions returned from API.' : null)
+      return parsedPredictions
     } catch (err) {
-      setLoadError('Failed to fetch predictions from API')
+      return undefined
     }
   }
+
+  // Cache the initial load to avoid duplicate network requests during
+  // React Strict Mode double-mount in development.
+  let initialLoadPromise: Promise<{
+    fixtures: Fixture[]
+    fixturesLookup: FixturesLookup
+    fixturesLookupMap: Record<string, string>
+    predictions: Prediction[]
+    players: string[]
+  }> | null = null
 
   useEffect(() => {
     ;(async () => {
       setIsLoading(true)
 
       try {
-        const loaded = await loadFixtureData()
-        let currentFixtures = loaded.fixtures
-        const resultsApiUrl = import.meta.env.VITE_RESULTS_API || '/api/results'
+        if (!initialLoadPromise) {
+          initialLoadPromise = (async () => {
+            const loaded = await loadFixtureData()
+            let currentFixtures = loaded.fixtures
+            const resultsApiUrl = import.meta.env.VITE_RESULTS_API || '/api/results'
 
-        setFixturesLookup(loaded.lookup)
-        setFixturesLookupMap(loaded.lookupMap)
-        storeLookup(loaded.lookup)
+            // Choose public or proxy URLs similarly to previous logic
+            const publicResultsUrl = import.meta.env.DEV ? undefined : import.meta.env.VITE_RESULTS_PUBLIC_URL
+            const useBlobProxy = Boolean(import.meta.env.BLOB_STORE_ID || import.meta.env.VITE_BLOB_STORE_ID)
+            const resultsRows = await loadResultsFromApi(
+              (publicResultsUrl as string) || (useBlobProxy ? '/__blob/results' : (resultsApiUrl as string)),
+            )
 
-        // Load results from the JSON API (Vercel Blob backed). Refresh any
-        // fixtures that are due and persist new rows via the webapp endpoint.
-        // If a public blob URL is provided, fetch that directly from the
-        // browser (no proxy). Otherwise, when running locally prefer the dev
-        // blob proxy unless an explicit API url was provided.
-        // In development prefer the local API so POSTs to `/api/results`
-        // update the UI immediately. Only use the public blob URL when
-        // not in dev mode.
-        const publicResultsUrl = import.meta.env.DEV ? undefined : import.meta.env.VITE_RESULTS_PUBLIC_URL
-        const useBlobProxy = Boolean(import.meta.env.BLOB_STORE_ID || import.meta.env.VITE_BLOB_STORE_ID)
-        const resultsRows = await loadResultsFromApi(
-          (publicResultsUrl as string) || (useBlobProxy ? '/__blob/results' : (resultsApiUrl as string)),
-        )
-        
-        const refreshedResults = await refreshDueResults(currentFixtures, resultsRows)
-        currentFixtures = applyResultRowsToFixtures(currentFixtures, refreshedResults)
+            const refreshedResults = await refreshDueResults(currentFixtures, resultsRows)
+            currentFixtures = applyResultRowsToFixtures(currentFixtures, refreshedResults)
 
-        setFixtures(currentFixtures)
+            // Load predictions from the JSON API (Vercel Blob backed).
+            const publicPredictionsUrl = import.meta.env.DEV ? undefined : import.meta.env.VITE_PREDICTIONS_PUBLIC_URL
+            const useBlobProxyPred = Boolean(import.meta.env.BLOB_STORE_ID || import.meta.env.VITE_BLOB_STORE_ID)
+            let predictionsApiUrl = import.meta.env.VITE_PREDICTIONS_API || '/api/predictions'
+            if (publicPredictionsUrl) predictionsApiUrl = publicPredictionsUrl as string
+            else if (useBlobProxyPred) predictionsApiUrl = '/__blob/predictions'
 
-        // Load predictions from the JSON API (Vercel Blob backed).
-        const publicPredictionsUrl = import.meta.env.DEV ? undefined : import.meta.env.VITE_PREDICTIONS_PUBLIC_URL
-        const useBlobProxyPred = Boolean(import.meta.env.BLOB_STORE_ID || import.meta.env.VITE_BLOB_STORE_ID)
-        let predictionsApiUrl = import.meta.env.VITE_PREDICTIONS_API || '/api/predictions'
-        if (publicPredictionsUrl) predictionsApiUrl = publicPredictionsUrl as string
-        else if (useBlobProxyPred) predictionsApiUrl = '/__blob/predictions'
+            const parsedPredictions = (await loadPredictionsFromApi(predictionsApiUrl as string, currentFixtures, loaded.lookupMap)) || []
+            const players = Array.from(new Set(parsedPredictions.map((p) => p.player).filter(Boolean)))
 
-        await loadPredictionsFromApi(predictionsApiUrl as string, currentFixtures, loaded.lookupMap)
+            return {
+              fixtures: currentFixtures,
+              fixturesLookup: loaded.lookup,
+              fixturesLookupMap: loaded.lookupMap,
+              predictions: parsedPredictions,
+              players,
+            }
+          })()
+        }
+
+        const data = await initialLoadPromise
+
+        if (data) {
+          setFixtures(data.fixtures)
+          setFixturesLookup(data.fixturesLookup)
+          setFixturesLookupMap(data.fixturesLookupMap)
+          storeLookup(data.fixturesLookup)
+          setPredictions(data.predictions)
+          if (data.players.length > 0) setPlayersState(data.players)
+          setLoadError(data.predictions.length === 0 ? 'No predictions returned from API.' : null)
+        }
       } catch (error) {
         setLoadError('Failed to load app data')
       } finally {
